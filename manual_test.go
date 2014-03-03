@@ -122,6 +122,9 @@ func TestTick(t *testing.T) {
 	}
 
 	ticker := at.NewTicker(time.Second, tickID2)
+	ch := ticker.Channel()
+	at.Trigger(tickID2)
+	<-ch
 	ticker.Stop()
 	at.Trigger(tickID2)
 }

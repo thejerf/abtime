@@ -7,6 +7,7 @@ import (
 // Ticker defines an interface for the functions that return *time.Ticker
 // in the original Time module.
 type Ticker interface {
+	Channel() <-chan time.Time
 	Stop()
 }
 

@@ -23,6 +23,7 @@ func TestConcrete(t *testing.T) {
 	<-ch
 
 	ticker := rt.NewTicker(time.Nanosecond, 0)
+	ticker.Channel()
 	ticker.Stop()
 
 	sendAfter := make(chan struct{})

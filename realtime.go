@@ -56,7 +56,7 @@ func (rt RealTime) Tick(d time.Duration, token int) <-chan time.Time {
 // NewTicker wraps time.NewTicker. It returns something conforming to the
 // abtime.Ticker interface.
 func (rt RealTime) NewTicker(d time.Duration, token int) Ticker {
-	return time.NewTicker(d)
+	return tickerWrapper{time.NewTicker(d)}
 }
 
 // AfterFunc wraps time.AfterFunc. It returns something conforming to the
@@ -69,4 +69,12 @@ func (rt RealTime) AfterFunc(d time.Duration, f func(), token int) Timer {
 // abtime.Timer interface.
 func (rt RealTime) NewTimer(d time.Duration, token int) Timer {
 	return TimerWrap{time.NewTimer(d)}
+}
+
+type tickerWrapper struct {
+	*time.Ticker
+}
+
+func (tw tickerWrapper) Channel() <-chan time.Time {
+	return tw.C
 }
