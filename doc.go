@@ -12,9 +12,9 @@ http://stackoverflow.com/questions/5622194/time-dependent-unit-tests/5622222#562
 http://jim-mcbeath.blogspot.com/2009/02/unit-testing-with-dates-and-times.html
 
 This module wraps the parts of the time module of Go that do access
-the OS time directly, as it stands at Go 1.2. Unfortunately, due to the
-fact I can not re-export types, you'll still need to import "time" for its
-types.
+the OS time directly, as it stands at Go 1.2 and 1.3 (which are both the
+same.) Unfortunately, due to the fact I can not re-export types, you'll 
+still need to import "time" for its types.
 
 This module declares an interface for time functions AbstractTime,
 provides an implementation that simply backs to the "real" time functions
