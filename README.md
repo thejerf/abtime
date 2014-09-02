@@ -22,7 +22,6 @@ This module is fully covered with
 usage, and everything else you might expect from a README.md on GitHub.
 (DRY.)
 
-This is not currently tagged with particular git tags for Go as this is
-currently considered to be alpha code. As I move this into production and
-feel more confident about it, I'll give it relevant tags. (The RealTime
-object is unlikely to change, but the ManualTime object might.)
+This is at least beta quality now, and if you're thinking about using it,
+bear in mind that what it really offers is a structure, not a huge pile of
+code. Should the code turn out incorrect, it would be easy for you to fix.

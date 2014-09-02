@@ -33,9 +33,12 @@ Avoid re-using IDs on the Tick functions; it becomes confusing which
 
 Be sure to see the Example below.
 
-Quality: At the moment I would call this alpha code. Go lint clean, go vet
+Quality: At the moment I would call this beta code. Go lint clean, go vet
 clean, 100% coverage in the tests. You and I both know that doesn't prove
-this is bug-free, but at least it shows I care.
+this is bug-free, but at least it shows I care. And bear in mind what
+this really provides is a structure, rather than a whackload of code; should
+the code prove not quite correct for your project, it will be easy for you
+to fix it.
 
 */
 package abtime
