@@ -15,7 +15,8 @@ import (
 //
 // This allows you to manipulate "now", and control when events occur.
 type ManualTime struct {
-	N        time.Time
+	now      time.Time
+	nows     []time.Time
 	triggers map[int]*triggerInfo
 
 	sync.Mutex
@@ -66,17 +67,23 @@ func (mt *ManualTime) register(id int, trig trigger) {
 // NewManual returns a new ManualTime object, with the Now populated
 // from the time.Now().
 func NewManual() *ManualTime {
-	return &ManualTime{N: time.Now(), triggers: make(map[int]*triggerInfo)}
+	return &ManualTime{now: time.Now(), nows: []time.Time{}, triggers: make(map[int]*triggerInfo)}
 }
 
 // NewManualAtTime returns a new ManualTime object, with the Now set to the
 // time.Time you pass in.
 func NewManualAtTime(now time.Time) *ManualTime {
-	return &ManualTime{N: now, triggers: make(map[int]*triggerInfo)}
+	return &ManualTime{now: now, nows: []time.Time{}, triggers: make(map[int]*triggerInfo)}
 }
 
 // Trigger takes the given ids for time events, and causes them to "occur":
 // triggering messages on channels, ending sleeps, etc.
+//
+// Note this is the ONLY way to "trigger" such events. While this package
+// allows you to manipulate "Now" in a couple of different ways, advancing
+// "now" past a Trigger's set time will NOT trigger it. First, this keeps
+// it simple to understand when things are triggered, and second, reality
+// isn't so deterministic anyhow....
 func (mt *ManualTime) Trigger(ids ...int) {
 	mt.Lock()
 	defer mt.Unlock()
@@ -101,19 +108,50 @@ func (mt *ManualTime) Trigger(ids ...int) {
 	}
 }
 
-// Now returns the ManualTime's current .N property, which is the
-// object's idea of "Now".
+// Now returns the ManualTime's current idea of "Now".
+//
+// If you have used QueueNow, this will advance to the next queued Now.
 func (mt *ManualTime) Now() time.Time {
-	return mt.N
+	mt.Lock()
+	defer mt.Unlock()
+
+	if len(mt.nows) > 0 {
+		mt.now = mt.nows[0]
+		mt.nows = mt.nows[1:]
+		return mt.now
+	} else {
+		return mt.now
+	}
 }
 
 // Advance advances the manual time's idea of "now" by the given
 // duration.
 //
-// Should you need to do anything fancier to the Now, the Now is available
-// as the N property on ManualTime. It is legal to change it directly.
+// If there is a queue of "Nows" from QueueNows, note this won't
+// affect any of them.
 func (mt *ManualTime) Advance(d time.Duration) {
-	mt.N = mt.N.Add(d)
+	mt.Lock()
+	defer mt.Unlock()
+
+	mt.now = mt.now.Add(d)
+}
+
+// QueueNows allows you to set a number of times to be retrieved by
+// successive calls to "Now". Once the queue is consumed by calls to Now(),
+// the last time in the queue "sticks" as the new Now.
+//
+// This is useful if you have code that is timing how long something took
+// by successive calls to .Now, with no other place for the test code to
+// intercede.
+//
+// If multiple threads are accessing the Manual, it is of course
+// non-deterministic who gets what time. However this could still be
+// useful.
+func (mt *ManualTime) QueueNows(times ...time.Time) {
+	mt.Lock()
+	defer mt.Unlock()
+
+	mt.nows = append(mt.nows, times...)
 }
 
 type afterTrigger struct {
@@ -123,7 +161,7 @@ type afterTrigger struct {
 }
 
 func (afterT afterTrigger) trigger(mt *ManualTime) bool {
-	afterT.ch <- afterT.mt.N.Add(afterT.d)
+	afterT.ch <- afterT.mt.now.Add(afterT.d)
 	return true
 }
 
@@ -194,7 +232,7 @@ func (tt *tickTrigger) Channel() <-chan time.Time {
 // trigger the ticks in such a way that they will be out of order.
 func (mt *ManualTime) NewTicker(d time.Duration, id int) Ticker {
 	ch := make(chan time.Time)
-	tt := &tickTrigger{C: ch, now: mt.N, d: d}
+	tt := &tickTrigger{C: ch, now: mt.now, d: d}
 	go mt.register(id, tt)
 	return tt
 }
@@ -231,6 +269,9 @@ func (af *afterFuncTrigger) Channel() <-chan time.Time {
 }
 
 func (af *afterFuncTrigger) trigger(mt *ManualTime) bool {
+	af.Lock()
+	defer af.Unlock()
+
 	if !af.stopped {
 		go af.f()
 	}
@@ -288,7 +329,7 @@ func (tt *timerTrigger) trigger(mt *ManualTime) bool {
 // NewTimer allows you to create a Ticker, which can be triggered
 // via the given id, and also supports the Stop operation *time.Tickers have.
 func (mt *ManualTime) NewTimer(d time.Duration, id int) Timer {
-	tt := &timerTrigger{c: make(chan time.Time), initialNow: mt.N, duration: d}
+	tt := &timerTrigger{c: make(chan time.Time), initialNow: mt.now, duration: d}
 	go mt.register(id, tt)
 	return tt
 }

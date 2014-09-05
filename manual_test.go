@@ -29,7 +29,7 @@ func TestAfter(t *testing.T) {
 
 	result := <-sent
 
-	if result != at.N.Add(time.Second) {
+	if result != at.now.Add(time.Second) {
 		t.Fatal("Got wrong time sent for After")
 	}
 
@@ -45,7 +45,7 @@ func TestAfter(t *testing.T) {
 	at.Trigger(afterID)
 
 	result = <-sent
-	if result != at.N.Add(time.Second) {
+	if result != at.now.Add(time.Second) {
 		t.Fatal("Got the wrong time sent for the After after the call")
 	}
 
@@ -172,7 +172,7 @@ func TestTimer(t *testing.T) {
 	}()
 
 	curTime := <-timer.Channel()
-	if at.N.Add(time.Second) != curTime {
+	if at.now.Add(time.Second) != curTime {
 		t.Fatal("Timer not sending proper time")
 	}
 
@@ -192,4 +192,31 @@ func TestInterfaceConformance(t *testing.T) {
 	at = NewManual()
 	at = NewRealTime()
 	at.Now()
+}
+
+func TestNowQueueing(t *testing.T) {
+	// this verifies that the "nows" queue in the expected manner
+	at := NewManual()
+	firstNow := at.Now()
+	desired := []time.Time{firstNow.Add(10 * time.Second), firstNow.Add(20 * time.Second)}
+	at.QueueNows(desired...)
+	if at.Now() != desired[0] {
+		t.Fatal("Failed to queue properly")
+	}
+	if at.Now() != desired[1] {
+		t.Fatal("Failed to advance queue properly")
+	}
+	if at.Now() != desired[1] {
+		t.Fatal("Failed to 'stick' the time properly.")
+	}
+}
+
+func panics(f func()) (panics bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			panics = true
+		}
+	}()
+	f()
+	return
 }
