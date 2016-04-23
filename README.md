@@ -22,9 +22,10 @@ This module is fully covered with
 usage, and everything else you might expect from a README.md on GitHub.
 (DRY.)
 
-This is at least beta quality now, and if you're thinking about using it,
-bear in mind that what it really offers is a structure, not a huge pile of
-code. Should the code turn out incorrect, it would be easy for you to fix.
+# Stability
+
+As I have been using this code for a while now and it has stopped changing,
+this is now at version 1.0.0.
 
 # Commit Signing
 
