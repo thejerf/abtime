@@ -25,3 +25,15 @@ usage, and everything else you might expect from a README.md on GitHub.
 This is at least beta quality now, and if you're thinking about using it,
 bear in mind that what it really offers is a structure, not a huge pile of
 code. Should the code turn out incorrect, it would be easy for you to fix.
+
+# Commit Signing
+
+Starting with the commit after 3003eee879c, I will be signing this repository
+with the ["jerf" keybase account](https://keybase.io/jerf). If you are viewing
+this repository through GitHub, you should see the commits as showing as
+"verified" in the commit view.
+
+(Bear in mind that due to the nature of how git commit signing works, there
+may be runs of unverified commits; what matters is that the top one is
+signed.)
+
