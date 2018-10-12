@@ -127,6 +127,7 @@ func TestTick(t *testing.T) {
 	<-ch
 	ticker.Stop()
 	at.Trigger(tickID2)
+	// if this test failed, it would hang the test waiting to write on ch.
 }
 
 func TestAfterFunc(t *testing.T) {
@@ -178,7 +179,9 @@ func TestTimer(t *testing.T) {
 
 	timer = at.NewTimer(time.Second, timerID)
 	timer.Reset(2 * time.Second)
-	timer.Stop()
+	if !timer.Stop() {
+		t.Fatal("Stopping the timer should have returned true")
+	}
 	at.Trigger(timerID)
 
 	// no good way to test the stop worked, the Stop description in
@@ -208,6 +211,28 @@ func TestNowQueueing(t *testing.T) {
 	}
 	if at.Now() != desired[1] {
 		t.Fatal("Failed to 'stick' the time properly.")
+	}
+}
+
+func TestTimerReset(t *testing.T) {
+	c := NewManual()
+	d := time.Hour
+	timer := c.NewTimer(d, timerID)
+
+	wasActive := timer.Reset(d)
+	if !wasActive {
+		t.Fatal("Unexpected value from the Reset method")
+	}
+
+	go func() {
+		c.Advance(d)
+		c.Trigger(timerID)
+	}()
+
+	<-timer.Channel()
+	wasActive = timer.Reset(d)
+	if wasActive {
+		t.Fatal("Unexpected reset result value")
 	}
 }
 

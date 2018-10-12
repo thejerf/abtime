@@ -301,7 +301,7 @@ func (tt *timerTrigger) Reset(d time.Duration) bool {
 	defer tt.Unlock()
 
 	tt.duration = d
-	return tt.stopped
+	return !tt.stopped
 }
 
 func (tt *timerTrigger) Stop() bool {
@@ -321,8 +321,8 @@ func (tt *timerTrigger) trigger(mt *ManualTime) bool {
 	if tt.stopped {
 		return true
 	}
-	tt.c <- tt.initialNow.Add(tt.duration)
 	tt.stopped = true
+	tt.c <- tt.initialNow.Add(tt.duration)
 	return true
 }
 
