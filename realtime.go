@@ -50,7 +50,7 @@ func (rt RealTime) Sleep(d time.Duration, token int) {
 
 // Tick wraps time.Tick.
 func (rt RealTime) Tick(d time.Duration, token int) <-chan time.Time {
-	return time.Tick(d)
+	return time.Tick(d) // nolint: megacheck
 }
 
 // NewTicker wraps time.NewTicker. It returns something conforming to the

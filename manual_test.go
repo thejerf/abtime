@@ -191,7 +191,7 @@ func TestTimer(t *testing.T) {
 func TestInterfaceConformance(t *testing.T) {
 	// this just verifies that both implementations actually implement
 	// ManualTime. Nothing else in the package actually does....
-	var at AbstractTime
+	var at AbstractTime // nolint: megacheck
 	at = NewManual()
 	at = NewRealTime()
 	at.Now()
@@ -234,14 +234,4 @@ func TestTimerReset(t *testing.T) {
 	if wasActive {
 		t.Fatal("Unexpected reset result value")
 	}
-}
-
-func panics(f func()) (panics bool) {
-	defer func() {
-		if r := recover(); r != nil {
-			panics = true
-		}
-	}()
-	f()
-	return
 }

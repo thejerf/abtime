@@ -119,9 +119,8 @@ func (mt *ManualTime) Now() time.Time {
 		mt.now = mt.nows[0]
 		mt.nows = mt.nows[1:]
 		return mt.now
-	} else {
-		return mt.now
 	}
+	return mt.now
 }
 
 // Advance advances the manual time's idea of "now" by the given
