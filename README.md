@@ -22,10 +22,15 @@ This module is fully covered with
 usage, and everything else you might expect from a README.md on GitHub.
 (DRY.)
 
-# Stability
+# Changelog
 
-As I have been using this code for a while now and it has stopped changing,
-this is now at version 1.0.0.
+* 1.0.1
+  * [Issue 3](https://github.com/thejerf/abtime/issues/3) reports a
+    reversal in the sense of the timer.Reset return value, which is
+    fixed. While fixing this, a race condition in setting the underlying
+    value was also fixed.
+* 1.0.0
+  * Initial Release.
 
 # Commit Signing
 
