@@ -116,16 +116,20 @@ func (mt *ManualTime) Trigger(ids ...int) {
 // NOTE: This method indicates a design flaw in abtime. It is not yet clear
 // to me how to fix it in any reasonable way.
 func (mt *ManualTime) Unregister(ids ...int) {
+	mt.Lock()
 	for _, id := range ids {
 		delete(mt.triggers, id)
 	}
+	mt.Unlock()
 }
 
 // UnregisterAll will unregister all current IDs from the manual time,
 // returning you to a fresh view of the created channels and timers and
 // such.
 func (mt *ManualTime) UnregisterAll() {
+	mt.Lock()
 	mt.triggers = map[int]*triggerInfo{}
+	mt.Unlock()
 }
 
 // Now returns the ManualTime's current idea of "Now".

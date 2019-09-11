@@ -24,6 +24,8 @@ usage, and everything else you might expect from a README.md on GitHub.
 
 # Changelog
 
+* 1.0.3:
+  * Fix locking for Unregister and UnregisterAll.
 * 1.0.2
   * Adds support for unregistering triggers, so the ids can be reused with
     the same abtime object.
