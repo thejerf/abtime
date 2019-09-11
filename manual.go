@@ -108,6 +108,26 @@ func (mt *ManualTime) Trigger(ids ...int) {
 	}
 }
 
+// Unregister will unregister a particular ID from the system. Normally the
+// first one sticks, which means if you've got code that creates multiple
+// timers in a loop or in multiple function calls, only the first one will
+// work.
+//
+// NOTE: This method indicates a design flaw in abtime. It is not yet clear
+// to me how to fix it in any reasonable way.
+func (mt *ManualTime) Unregister(ids ...int) {
+	for _, id := range ids {
+		delete(mt.triggers, id)
+	}
+}
+
+// UnregisterAll will unregister all current IDs from the manual time,
+// returning you to a fresh view of the created channels and timers and
+// such.
+func (mt *ManualTime) UnregisterAll() {
+	mt.triggers = map[int]*triggerInfo{}
+}
+
 // Now returns the ManualTime's current idea of "Now".
 //
 // If you have used QueueNow, this will advance to the next queued Now.

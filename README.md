@@ -24,6 +24,17 @@ usage, and everything else you might expect from a README.md on GitHub.
 
 # Changelog
 
+* 1.0.2
+  * Adds support for unregistering triggers, so the ids can be reused with
+    the same abtime object.
+
+    As the godoc says, this is a sign of some sort of flaw, but it is not
+    yet clear how to handle it. I still haven't found a good option for an
+    API for this stuff. My original goal with abtime was to be as close to
+    the original `time` API as possible, I'm considering abandoning
+    that. Though I still don't know what exactly that would look like.
+
+    (Plus, this need some sort of context support now.)
 * 1.0.1
   * [Issue 3](https://github.com/thejerf/abtime/issues/3) reports a
     reversal in the sense of the timer.Reset return value, which is

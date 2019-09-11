@@ -235,3 +235,28 @@ func TestTimerReset(t *testing.T) {
 		t.Fatal("Unexpected reset result value")
 	}
 }
+
+func TestMultipleTimerCreation(t *testing.T) {
+	c := NewManual()
+
+	_ = c.NewTimer(time.Second, timerID)
+
+	// Klunky. More sign this is wrong. running "go" to register the
+	// trigger doesn't make sense here.
+	for {
+		c.Lock()
+		_, registered := c.triggers[timerID]
+		c.Unlock()
+
+		if registered {
+			break
+		}
+		time.Sleep(time.Microsecond)
+	}
+
+	c.Unregister(timerID)
+	timer2 := c.NewTimer(time.Second, timerID)
+	go c.Trigger(timerID)
+	<-timer2.Channel()
+
+}
