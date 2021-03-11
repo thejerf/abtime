@@ -22,8 +22,45 @@ This module is fully covered with
 usage, and everything else you might expect from a README.md on GitHub.
 (DRY.)
 
+# Why abtime and not the more popular clock abstractions?
+
+Most if not all other time testing abstractions for Go attempt to simulate
+the passage of time itself. That is, you can set a Timer for a second from
+now, then, you tell the time replacement module that one second has passed,
+and it will trigger the timer at that point.
+
+That is indeed simpler for simple use cases than what I have here, and
+permits a drop-in interface replacement for the whole module. However,
+it does not permit you to test _all_ scenarios, because it is built on
+a fundamentally false premise, which is that time is a monotonic,
+agreed-upon value for all goroutines. That is not how goroutines "perceive"
+time.
+
+In reality, if you give one goroutine a timer for 1 second in the future,
+and another goroutine a timer for 1.1 seconds in the future, it is entirely
+possible for the second goroutine to entirely finish its execution before
+the first one even gets woken up. (The first goroutine may well have had
+its timer triggered, but then immediately descheduled for whatever reason,
+while the second runs to completion.)
+
+Proper testing of complex time-dependent multi-goroutine coordination
+requires deeper levels of control than a compatible API can offer. This
+package takes the hit of having to add unique IDs to timers and tickers
+in order to permit a deeper level of testing, as proper testing of
+time-sensitive code must be able to consider the case where events in
+different goroutines happen "out of order", because they will.
+
+If you only have one goroutine using time-based code then this package may
+be overkill. However, if you have multiple goroutines interacting with each
+other while also referring to the clock, you may find this package is
+worthwhile as it will permit you to set up important test scenarios that
+drop-in replacements for the time package simply can not express.
+
 # Changelog
 
+* 1.0.4:
+  * Add ticker.Reset for Go 1.15. This version requires Go 1.15.
+  * Add proper go module support.
 * 1.0.3:
   * Fix locking for Unregister and UnregisterAll.
 * 1.0.2
