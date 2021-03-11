@@ -125,6 +125,7 @@ func TestTick(t *testing.T) {
 	ch := ticker.Channel()
 	at.Trigger(tickID2)
 	<-ch
+	ticker.Reset(time.Second)
 	ticker.Stop()
 	at.Trigger(tickID2)
 	// if this test failed, it would hang the test waiting to write on ch.

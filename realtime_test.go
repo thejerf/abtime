@@ -24,6 +24,7 @@ func TestConcrete(t *testing.T) {
 
 	ticker := rt.NewTicker(time.Nanosecond, 0)
 	ticker.Channel()
+	ticker.Reset(time.Second)
 	ticker.Stop()
 
 	sendAfter := make(chan struct{})

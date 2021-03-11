@@ -8,6 +8,7 @@ import (
 // in the original Time module.
 type Ticker interface {
 	Channel() <-chan time.Time
+	Reset(time.Duration)
 	Stop()
 }
 

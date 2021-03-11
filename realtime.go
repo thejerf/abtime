@@ -78,3 +78,7 @@ type tickerWrapper struct {
 func (tw tickerWrapper) Channel() <-chan time.Time {
 	return tw.C
 }
+
+func (tw tickerWrapper) Reset(d time.Duration) {
+	tw.Ticker.Reset(d)
+}

@@ -246,6 +246,8 @@ func (tt *tickTrigger) Channel() <-chan time.Time {
 	return tt.C
 }
 
+func (tt *tickTrigger) Reset(time.Duration) {}
+
 // NewTicker wraps time.NewTicker. It takes a snapshot of "now" at the
 // point of the TickToken call, and will increment the time it returns
 // by the Duration of the tick.
