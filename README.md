@@ -58,6 +58,9 @@ drop-in replacements for the time package simply can not express.
 
 # Changelog
 
+* 1.0.5:
+  * The manual timer is ALWAYS successfully stopped by a Stop call, so
+    .Stop must always return true.
 * 1.0.4:
   * Add ticker.Reset for Go 1.15. This version requires Go 1.15.
   * Add proper go module support.

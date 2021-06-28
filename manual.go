@@ -333,9 +333,8 @@ func (tt *timerTrigger) Stop() bool {
 	tt.Lock()
 	defer tt.Unlock()
 
-	ret := !tt.stopped
 	tt.stopped = true
-	return ret
+	return true
 }
 
 func (tt *timerTrigger) Channel() <-chan time.Time {
