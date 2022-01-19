@@ -58,9 +58,15 @@ drop-in replacements for the time package simply can not express.
 
 # Changelog
 
+* 1.0.6:
+  * Manual timer needs to reflect whether it was stopped, not _that_ it was
+    stopped.
+  * This also cleans up some of the concurrency. This was one of my earlier
+    libraries. The place where a goroutine is spawned to perform the
+    various triggered actions should now be more correct.
 * 1.0.5:
-  * The manual timer is ALWAYS successfully stopped by a Stop call, so
-    .Stop must always return true.
+  * (INCORRECT) The manual timer is ALWAYS successfully stopped by a Stop
+    call, so .Stop must always return true.
 * 1.0.4:
   * Add ticker.Reset for Go 1.15. This version requires Go 1.15.
   * Add proper go module support.

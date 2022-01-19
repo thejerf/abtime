@@ -152,15 +152,15 @@ func TestAfterFunc(t *testing.T) {
 
 	<-funcRun
 
-	timer = at.AfterFunc(time.Second, func() {
+	timer2 := at.AfterFunc(time.Second, func() {
 		panic("I should never be run!")
-	}, afterFuncID)
+	}, afterFuncID+1)
 
-	if !timer.Stop() {
+	if !timer2.Stop() {
 		t.Fatal("Stop should not return true like this")
 	}
-	at.Trigger(afterFuncID)
-	if timer.Stop() || !timer.Reset(time.Second*3) {
+	at.Trigger(afterFuncID + 1)
+	if timer2.Stop() || !timer2.Reset(time.Second*3) {
 		t.Fatal("Stop/Reset should be returning true here")
 	}
 }
@@ -187,6 +187,31 @@ func TestTimer(t *testing.T) {
 
 	// no good way to test the stop worked, the Stop description in
 	// the time package explicitly says it does not close the channel.
+}
+
+// This tests for a bug I encountered in real code. If a timer is Stopped,
+// then Reset, it got itself marked as not running permanently, so future
+// Stops would return the wrong value, and things trying to drain it would
+// hang because there was nothing to drain.
+func TestTimerResetRunsCorrectly(t *testing.T) {
+	at := NewManual()
+
+	timer := at.NewTimer(time.Second, timerID)
+
+	ret := timer.Stop()
+	if !ret {
+		t.Fatal("timer should be marked as running")
+	}
+	ret = timer.Stop()
+	if ret {
+		t.Fatal("timer should be marked as not running")
+	}
+	timer.Reset(time.Second)
+	ret = timer.Stop()
+	if !ret {
+		// This is where the bug would occur.
+		t.Fatal("timer should be marked as running again")
+	}
 }
 
 func TestInterfaceConformance(t *testing.T) {

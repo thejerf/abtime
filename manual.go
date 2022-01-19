@@ -23,6 +23,9 @@ type ManualTime struct {
 }
 
 type triggerInfo struct {
+	// the number of times this has been Triggered without anything in
+	// the triggers array. This accounts for when .Trigger is called
+	// before the thing has been registered.
 	count    uint
 	triggers []trigger
 }
@@ -39,27 +42,26 @@ func (mt *ManualTime) register(id int, trig trigger) {
 
 	currentTriggerInfo, present := mt.triggers[id]
 	if !present {
-		mt.triggers[id] = &triggerInfo{0, []trigger{trig}}
-		return
+		ti := &triggerInfo{0, []trigger{trig}}
+		mt.triggers[id] = ti
+		currentTriggerInfo = ti
 	}
+
+	currentTriggerInfo.triggers = append(currentTriggerInfo.triggers, trig)
 
 	if currentTriggerInfo.count == 0 {
-		currentTriggerInfo.triggers = append(currentTriggerInfo.triggers, trig)
 		return
 	}
 
-	for currentTriggerInfo.count > 0 {
+	for currentTriggerInfo.count > 0 && len(currentTriggerInfo.triggers) > 0 {
+		toTrigger := currentTriggerInfo.triggers[0]
 		currentTriggerInfo.count--
 
-		discard := trig.trigger(mt)
+		discard := toTrigger.trigger(mt)
 
 		if discard {
-			break
-		}
-
-		if currentTriggerInfo.count == 0 {
-			currentTriggerInfo.triggers = append(currentTriggerInfo.triggers, trig)
-			break
+			currentTriggerInfo.triggers = currentTriggerInfo.triggers[1:]
+			continue
 		}
 	}
 }
@@ -184,7 +186,7 @@ type afterTrigger struct {
 }
 
 func (afterT afterTrigger) trigger(mt *ManualTime) bool {
-	afterT.ch <- afterT.mt.now.Add(afterT.d)
+	go func() { afterT.ch <- afterT.mt.now.Add(afterT.d) }()
 	return true
 }
 
@@ -192,7 +194,7 @@ func (afterT afterTrigger) trigger(mt *ManualTime) bool {
 func (mt *ManualTime) After(d time.Duration, id int) <-chan time.Time {
 	timeChan := make(chan time.Time)
 	trigger := afterTrigger{mt, d, timeChan}
-	go mt.register(id, trigger)
+	mt.register(id, trigger)
 	return timeChan
 }
 
@@ -201,7 +203,7 @@ type sleepTrigger struct {
 }
 
 func (st sleepTrigger) trigger(mt *ManualTime) bool {
-	st.c <- struct{}{}
+	go func() { st.c <- struct{}{} }()
 	return true
 }
 
@@ -209,7 +211,7 @@ func (st sleepTrigger) trigger(mt *ManualTime) bool {
 func (mt *ManualTime) Sleep(d time.Duration, id int) {
 	ch := make(chan struct{})
 
-	go mt.register(id, sleepTrigger{ch})
+	mt.register(id, sleepTrigger{ch})
 
 	<-ch
 }
@@ -231,7 +233,7 @@ func (tt *tickTrigger) trigger(mt *ManualTime) bool {
 	}
 
 	tt.now = tt.now.Add(tt.d)
-	tt.C <- tt.now
+	go func() { tt.C <- tt.now }()
 	return false
 }
 
@@ -258,7 +260,7 @@ func (tt *tickTrigger) Reset(time.Duration) {}
 func (mt *ManualTime) NewTicker(d time.Duration, id int) Ticker {
 	ch := make(chan time.Time)
 	tt := &tickTrigger{C: ch, now: mt.now, d: d}
-	go mt.register(id, tt)
+	mt.register(id, tt)
 	return tt
 }
 
@@ -277,7 +279,9 @@ func (af *afterFuncTrigger) Reset(d time.Duration) bool {
 	af.Lock()
 	defer af.Unlock()
 
-	return af.stopped
+	ret := af.stopped
+	af.stopped = false
+	return ret
 }
 
 func (af *afterFuncTrigger) Stop() bool {
@@ -309,7 +313,7 @@ func (af *afterFuncTrigger) trigger(mt *ManualTime) bool {
 // .Trigger()ed. The resulting Timer object will return nil for its Channel().
 func (mt *ManualTime) AfterFunc(d time.Duration, f func(), id int) Timer {
 	af := &afterFuncTrigger{f: f, stopped: false}
-	go mt.register(id, af)
+	mt.register(id, af)
 	return af
 }
 
@@ -326,7 +330,9 @@ func (tt *timerTrigger) Reset(d time.Duration) bool {
 	defer tt.Unlock()
 
 	tt.duration = d
-	return !tt.stopped
+	ret := !tt.stopped
+	tt.stopped = false
+	return ret
 }
 
 func (tt *timerTrigger) Stop() bool {
@@ -346,7 +352,7 @@ func (tt *timerTrigger) trigger(mt *ManualTime) bool {
 		return true
 	}
 	tt.stopped = true
-	tt.c <- tt.initialNow.Add(tt.duration)
+	go func() { tt.c <- tt.initialNow.Add(tt.duration) }()
 	return true
 }
 
@@ -354,6 +360,6 @@ func (tt *timerTrigger) trigger(mt *ManualTime) bool {
 // via the given id, and also supports the Stop operation *time.Tickers have.
 func (mt *ManualTime) NewTimer(d time.Duration, id int) Timer {
 	tt := &timerTrigger{c: make(chan time.Time), initialNow: mt.now, duration: d}
-	go mt.register(id, tt)
+	mt.register(id, tt)
 	return tt
 }
