@@ -7,6 +7,7 @@ package abtime
 // test suite. Plus that's just a weird binding that invites problems.
 
 import (
+	"context"
 	"sync"
 	"time"
 )
@@ -362,4 +363,80 @@ func (mt *ManualTime) NewTimer(d time.Duration, id int) Timer {
 	tt := &timerTrigger{c: make(chan time.Time), initialNow: mt.now, duration: d}
 	mt.register(id, tt)
 	return tt
+}
+
+type contextTrigger struct {
+	context.Context
+	deadline time.Time
+	closed   bool
+	done     chan struct{}
+	err      error
+	mu       sync.Mutex
+}
+
+func (ct *contextTrigger) Deadline() (time.Time, bool) {
+	return ct.deadline, true
+}
+
+func (ct *contextTrigger) Done() <-chan struct{} {
+	return ct.done
+}
+
+func (ct *contextTrigger) Err() error {
+	ct.mu.Lock()
+	defer ct.mu.Unlock()
+	return ct.err
+}
+
+func (ct *contextTrigger) Value(key interface{}) interface{} {
+	return ct.Context.Value(key)
+}
+
+func (ct *contextTrigger) cancel(err error) {
+	ct.mu.Lock()
+	defer ct.mu.Unlock()
+	if !ct.closed {
+		close(ct.done)
+		ct.closed = true
+		ct.err = err
+	}
+}
+
+func (ct *contextTrigger) trigger(_ *ManualTime) bool {
+	ct.cancel(context.DeadlineExceeded)
+	return true
+}
+
+// WithDeadline is a valid Context that is meant to drop in over a regular
+// context.WithDeadline invocation. Instead of being canceled when reaching an
+// actual deadline the context is canceled either by Trigger or by the returned
+// CancelFunc.
+func (mt *ManualTime) WithDeadline(parent context.Context, deadline time.Time, id int) (context.Context, context.CancelFunc) {
+	if parent == nil {
+		panic("cannot create context from nil parent")
+	}
+	ct := &contextTrigger{
+		Context:  parent,
+		deadline: deadline,
+		done:     make(chan struct{}),
+	}
+	cancelF := func() {
+		ct.cancel(context.Canceled)
+	}
+	mt.register(id, ct)
+	go func() {
+		select {
+		case <-parent.Done():
+			ct.cancel(parent.Err())
+		case <-ct.Done():
+			// do nothing
+		}
+	}()
+	return ct, context.CancelFunc(cancelF)
+}
+
+// WithTimeout is equivalent to WithDeadline invoked on a deadline equal to the
+// current time plus the timeout.
+func (mt *ManualTime) WithTimeout(parent context.Context, timeout time.Duration, id int) (context.Context, context.CancelFunc) {
+	return mt.WithDeadline(parent, mt.Now().Add(timeout), id)
 }

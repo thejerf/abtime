@@ -1,6 +1,8 @@
 package abtime
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 )
@@ -12,6 +14,8 @@ const (
 	tickID2
 	afterFuncID
 	timerID
+	contextID
+	childContextID
 )
 
 func TestAfter(t *testing.T) {
@@ -285,4 +289,138 @@ func TestMultipleTimerCreation(t *testing.T) {
 	go c.Trigger(timerID)
 	<-timer2.Channel()
 
+}
+
+func TestContextCancel(t *testing.T) {
+	mt := NewManual()
+
+	ctx, cancelF := mt.WithTimeout(context.Background(), time.Minute, contextID)
+
+	select {
+	case <-ctx.Done():
+		t.Fatal("context done channel already closed")
+	default:
+	}
+
+	if ctx.Err() != nil {
+		t.Fatal("context error is not nil")
+	}
+
+	cancelF()
+
+	select {
+	case <-ctx.Done():
+	default:
+		t.Fatal("context done channel open when it should be closed")
+	}
+
+	if ctx.Err() == nil || !errors.Is(ctx.Err(), context.Canceled) {
+		t.Fatal("context error is not context.Canceled")
+	}
+}
+
+func TestContextTrigger(t *testing.T) {
+	mt := NewManual()
+
+	ctx, cancelF := mt.WithTimeout(context.Background(), time.Minute, contextID)
+
+	select {
+	case <-ctx.Done():
+		t.Fatal("context done channel already closed")
+	default:
+	}
+
+	if ctx.Err() != nil {
+		t.Fatal("context error is not nil")
+	}
+
+	mt.Trigger(contextID)
+
+	select {
+	case <-ctx.Done():
+	default:
+		t.Fatal("context done channel open when it should be closed")
+	}
+
+	if ctx.Err() == nil || !errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		t.Fatal("context error is not context.DeadlineExceeded")
+	}
+
+	cancelF()
+
+	if ctx.Err() == nil || !errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		t.Fatal("context error is not context.DeadlineExceeded")
+	}
+}
+
+func TestContextNestedCancel(t *testing.T) {
+	mt := NewManual()
+
+	parent, parentCancel := context.WithCancel(context.Background())
+	child, childCancel := mt.WithTimeout(parent, time.Minute, contextID)
+
+	select {
+	case <-child.Done():
+		t.Fatal("context done channel already closed")
+	default:
+	}
+
+	if child.Err() != nil {
+		t.Fatal("context error is not nil")
+	}
+
+	parentCancel()
+
+	select {
+	case <-child.Done():
+	case <-time.After(50 * time.Microsecond):
+		t.Fatal("context done channel open when it should be closed")
+	}
+
+	if child.Err() == nil || !errors.Is(child.Err(), context.Canceled) {
+		t.Fatal("context error is not context.Canceled")
+	}
+
+	childCancel()
+}
+
+func TestContextNestedTimeout(t *testing.T) {
+	mt := NewManual()
+
+	parent, parentCancel := mt.WithTimeout(context.Background(), time.Minute, contextID)
+	child, childCancel := mt.WithTimeout(parent, time.Minute, childContextID)
+
+	select {
+	case <-child.Done():
+		t.Fatal("context done channel already closed")
+	default:
+	}
+
+	if child.Err() != nil {
+		t.Fatal("context error is not nil")
+	}
+
+	mt.Trigger(contextID)
+
+	select {
+	case <-child.Done():
+	case <-time.After(50 * time.Microsecond):
+		t.Fatal("context done channel open when it should be closed")
+	}
+
+	if child.Err() == nil || !errors.Is(child.Err(), context.DeadlineExceeded) {
+		t.Fatal("context error is not context.DeadlineExceeded")
+	}
+
+	childCancel()
+
+	if child.Err() == nil || !errors.Is(child.Err(), context.DeadlineExceeded) {
+		t.Fatal("context error is not context.DeadlineExceeded")
+	}
+
+	parentCancel()
+
+	if child.Err() == nil || !errors.Is(child.Err(), context.DeadlineExceeded) {
+		t.Fatal("context error is not context.DeadlineExceeded")
+	}
 }
