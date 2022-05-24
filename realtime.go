@@ -1,6 +1,7 @@
 package abtime
 
 import (
+	"context"
 	"time"
 )
 
@@ -81,4 +82,14 @@ func (tw tickerWrapper) Channel() <-chan time.Time {
 
 func (tw tickerWrapper) Reset(d time.Duration) {
 	tw.Ticker.Reset(d)
+}
+
+// WithDeadline wraps context's normal WithDeadline invocation.
+func (rt RealTime) WithDeadline(parent context.Context, deadline time.Time, _ int) (context.Context, context.CancelFunc) {
+	return context.WithDeadline(parent, deadline)
+}
+
+// WithTimeout wraps context's normal WithTimeout invocation.
+func (rt RealTime) WithTimeout(parent context.Context, timeout time.Duration, _ int) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(parent, timeout)
 }

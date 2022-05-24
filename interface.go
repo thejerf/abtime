@@ -1,6 +1,7 @@
 package abtime
 
 import (
+	"context"
 	"time"
 )
 
@@ -29,4 +30,7 @@ type AbstractTime interface {
 	NewTicker(time.Duration, int) Ticker
 	AfterFunc(time.Duration, func(), int) Timer
 	NewTimer(time.Duration, int) Timer
+
+	WithDeadline(context.Context, time.Time, int) (context.Context, context.CancelFunc)
+	WithTimeout(context.Context, time.Duration, int) (context.Context, context.CancelFunc)
 }
