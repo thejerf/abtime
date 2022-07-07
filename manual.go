@@ -43,28 +43,13 @@ func (mt *ManualTime) register(id int, trig trigger) {
 
 	currentTriggerInfo, present := mt.triggers[id]
 	if !present {
-		ti := &triggerInfo{0, []trigger{trig}}
-		mt.triggers[id] = ti
-		currentTriggerInfo = ti
+		mt.triggers[id] = &triggerInfo{0, []trigger{trig}}
+		return
 	}
 
 	currentTriggerInfo.triggers = append(currentTriggerInfo.triggers, trig)
 
-	if currentTriggerInfo.count == 0 {
-		return
-	}
-
-	for currentTriggerInfo.count > 0 && len(currentTriggerInfo.triggers) > 0 {
-		toTrigger := currentTriggerInfo.triggers[0]
-		currentTriggerInfo.count--
-
-		discard := toTrigger.trigger(mt)
-
-		if discard {
-			currentTriggerInfo.triggers = currentTriggerInfo.triggers[1:]
-			continue
-		}
-	}
+	triggerAll(mt, currentTriggerInfo)
 }
 
 // NewManual returns a new ManualTime object, with the Now populated
@@ -77,6 +62,21 @@ func NewManual() *ManualTime {
 // time.Time you pass in.
 func NewManualAtTime(now time.Time) *ManualTime {
 	return &ManualTime{now: now, nows: []time.Time{}, triggers: make(map[int]*triggerInfo)}
+}
+
+// triggerAll triggers all registered triggers count times, discarding triggers
+// as requested.
+func triggerAll(mt *ManualTime, ti *triggerInfo) {
+	for ti.count > 0 && len(ti.triggers) > 0 {
+		keep := []trigger{}
+		for _, toTrigger := range ti.triggers {
+			if !toTrigger.trigger(mt) {
+				keep = append(keep, toTrigger)
+			}
+		}
+		ti.triggers = keep
+		ti.count--
+	}
 }
 
 // Trigger takes the given ids for time events, and causes them to "occur":
@@ -97,17 +97,10 @@ func (mt *ManualTime) Trigger(ids ...int) {
 			mt.triggers[id] = &triggerInfo{1, []trigger{}}
 			continue
 		}
-		if len(triggers.triggers) == 0 {
-			triggers.count++
-			continue
-		}
 
-		t := triggers.triggers[0]
-		discard := t.trigger(mt)
+		triggers.count++
 
-		if discard {
-			triggers.triggers = triggers.triggers[1:]
-		}
+		triggerAll(mt, triggers)
 	}
 }
 
@@ -340,8 +333,9 @@ func (tt *timerTrigger) Stop() bool {
 	tt.Lock()
 	defer tt.Unlock()
 
+	ret := tt.stopped
 	tt.stopped = true
-	return true
+	return ret
 }
 
 func (tt *timerTrigger) Channel() <-chan time.Time {

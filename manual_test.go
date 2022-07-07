@@ -184,7 +184,7 @@ func TestTimer(t *testing.T) {
 
 	timer = at.NewTimer(time.Second, timerID)
 	timer.Reset(2 * time.Second)
-	if !timer.Stop() {
+	if timer.Stop() {
 		t.Fatal("Stopping the timer should have returned true")
 	}
 	at.Trigger(timerID)
@@ -203,18 +203,18 @@ func TestTimerResetRunsCorrectly(t *testing.T) {
 	timer := at.NewTimer(time.Second, timerID)
 
 	ret := timer.Stop()
-	if !ret {
-		t.Fatal("timer should be marked as running")
+	if ret {
+		t.Fatal("timer should return true to indicate Stop() stopped it")
 	}
 	ret = timer.Stop()
-	if ret {
-		t.Fatal("timer should be marked as not running")
+	if !ret {
+		t.Fatal("timer should return false to indicate Stop() didn't stop it")
 	}
 	timer.Reset(time.Second)
 	ret = timer.Stop()
-	if !ret {
+	if ret {
 		// This is where the bug would occur.
-		t.Fatal("timer should be marked as running again")
+		t.Fatal("timer should return true to indicate Stop() stopped it")
 	}
 }
 
