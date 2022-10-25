@@ -335,7 +335,7 @@ func (tt *timerTrigger) Stop() bool {
 
 	ret := tt.stopped
 	tt.stopped = true
-	return ret
+	return !ret
 }
 
 func (tt *timerTrigger) Channel() <-chan time.Time {
@@ -343,10 +343,13 @@ func (tt *timerTrigger) Channel() <-chan time.Time {
 }
 
 func (tt *timerTrigger) trigger(mt *ManualTime) bool {
+	tt.Lock()
 	if tt.stopped {
+		tt.Unlock()
 		return true
 	}
 	tt.stopped = true
+	tt.Unlock()
 	go func() { tt.c <- tt.initialNow.Add(tt.duration) }()
 	return true
 }
