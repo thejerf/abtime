@@ -4,7 +4,8 @@
 
     go get github.com/thejerf/abtime
 
-A library for abstracting away from the literal Go time library, for testing and time control.
+A library for abstracting away from the literal Go time library and the
+context's cancellation and timeout libraries, for testing and time control.
 
 In any code that seriously uses time, such as billing or scheduling code,
 best software engineering practices are that you should not directly
@@ -58,6 +59,11 @@ drop-in replacements for the time package simply can not express.
 
 # Changelog
 
+* 1.0.7:
+  * Fixups in the internal registration of triggerable events.
+  * Added wrappers around context.WithTimeout and context.WithCancel that
+    allow controlled cancellation of contexts like the rest of time-based
+    code.
 * 1.0.6:
   * Manual timer needs to reflect whether it was stopped, not _that_ it was
     stopped.
